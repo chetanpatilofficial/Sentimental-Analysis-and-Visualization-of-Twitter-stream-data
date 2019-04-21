@@ -9,7 +9,11 @@ Implemented three use-cases for Twitter Stream Data Analysis:
   * Use-case 3: Visualization of the Top-6 trending #Hashtags using Word-Cloud graphs
 
 Project Workflow:
-  * Once we are registered with Twitter APIs, we can consume the Twitter streams in real-time. We are using a NetCat utility which reads the tweet streams and publishes on a port 9999 on the localhost.Our Spark instance then listens on the port 9999 and reads the live streams and processes it. All our use cases are implemented inside Spark using python code and libraries. Once the tweets are processed using custom business logic, the outputs in json format are pushed to multiple Kafka Topics We have a separate nodejs server setup up for reading the Kafka topic and perform visualizations using d3js
+  * Once we are registered with Twitter APIs, we can consume the Twitter streams in real-time. 
+  * I am using a NetCat utility which reads the tweet streams and publishes on a port 9999 on the localhost.
+  * Our Spark instance then listens on the port 9999 and reads the live streams and processes it. 
+  * All our use cases are implemented inside Spark using python code and libraries. 
+  * Once the tweets are processed using custom business logic, the outputs in json format are pushed to multiple Kafka Topics We have a separate nodejs server setup up for reading the Kafka topic and perform visualizations using d3js
 
 Infrastructure Setup:
   * Google Cloud (GCP) Compute Instance to host our Servers. (Specification: 4 cores CPU, 15 GB RAM, 500 GB HDD)
