@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Trending Hashtags </title>
+        <style>
+            .line {
+              fill: none;
+              stroke: steelblue;
+              stroke-width: 1.5px;
+            }
+        
+            .legenditem {
+              float: left;
+              padding-right: 10px;
+            }
+          </style>
+    </head>
+<body>
+  <h1 align="center">Trending #Hashtags For Indian Elections</h1>
+  <script src="http://d3js.org/d3.v3.min.js"></script>
+  <script src="https://rawgit.com/jasondavies/d3-cloud/master/build/d3.layout.cloud.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+  <script>
+    //------------------------------------------------Connect to Nodejs Server Using Socket.io-----------------------------------//
+    var socket = io.connect("http://localhost:3002");
+
+    //------------------------------------------------D3js Code------------------------------------------------------------------//
+    // Encapsulate the word cloud functionality
+    function wordCloud(selector) {
+
+var fill = d3.scale.category20();
+d3.select(selector).style('text-align', 'center')
+        d3.select(selector).style('border-style', 'groove')
+
+//Construct the word cloud's SVG element
+var svg = d3.select(selector).append("svg")
+    .attr("width", 700)
+    .attr("height", 700)
+    .append("g")
+    .attr("transform", "translate(470,470)");
+
+
+//Draw the word cloud
+function draw(words) {
+    var cloud = svg.selectAll("g text")
+                    .data(words, function(d) { return d.text; })
+
+    //Entering words
+    cloud.enter()
+        .append("text")
+        .style("font-family", "Impact")
+        .style("fill", function(d, i) { return fill(i); })
+        .attr("text-anchor", "middle")
+        .attr('font-size', 1)
+        .text(function(d) { return d.text; });
+
+    //Entering and existing words
+    cloud
+        .transition()
+            .duration(600)
+            .style("font-size", function(d) { return d.size + "px"; })
+            .attr("transform", function(d) {
+                return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
+            })
+            .style("fill-opacity", 1);
+
+    //Exiting words
+    cloud.exit()
+        .transition()
+            .duration(200)
+            .style('fill-opacity', 1e-6)
+            .attr('font-size', 1)
+            .remove();
+}
+
+
+//Use the module pattern to encapsulate the visualisation code. We'll
+// expose only the parts that need to be public.
+return {
+
+    //Recompute the word cloud for a new set of words. This method will
+    // asycnhronously call draw when the layout has been computed.
+    //The outside world will need to call this function, so make it part
+    // of the wordCloud return value.
+    update: function(words) {
+        d3.layout.cloud().size([600, 600])
+            .words(words)
+            .padding(5)
+            .rotate(function() { return ~~(Math.random() * 2) * 90; })
+            .font("Impact")
+            .fontSize(function(d) { return d.size + 20; })
+            .on("end", draw)
+            .start();
+    }
+}
+
+}
+
+    var myWordCloud = wordCloud('body');
+    socket.on('data', function(message) {
+    var wordarray = [] 
+            var hashtags_data = JSON.parse(message['value']);
+            var hashtags = Object.keys(hashtags_data);
+            //console.log("hashtags", hashtags)
+            for (let keys of hashtags){
+                wordarray.push({ "text" : '#' + keys ,"size" :   hashtags_data[keys] });
+            }
+            //console.log("wordarray",wordarray)
+            myWordCloud.update(wordarray)
+        })
+
+
+</script>
+</body>
+</

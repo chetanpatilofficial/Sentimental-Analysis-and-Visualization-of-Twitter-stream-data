@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Real Time Pie Chart Visualization Of Most Number Of Tweets</title>
+    <style>
+        .chart text {
+            font: 16px sans-serif;
+        }
+
+        .chart {
+            position: relative;
+            /*	top: 2em;*/
+        }
+    </style>
+</head>
+<body>
+    <h1 align="center">Real Time Pie Chart Visualization Of Most Number Of Tweets By Major Election Parties in India</h1>
+    <div style="text-align:center; border-style:groove"><svg class="chart"></svg></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
+    <script src="https://gitcdn.xyz/repo/cool-Blue/d3-lib/master/transitions/end-all/endAll.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+    <script>
+
+    //------------------------------------------------Connect to Nodejs Server Using Socket.io-----------------------------------//
+        var socket = io.connect("http://localhost:3001");
+        function crm(f) {
+
+            var prevData = [];
+            //Connect to node js server using Ip and Port configured in node js to avail data
+            socket.on('data', function(message) {
+
+                election_parties_data = JSON.parse(message['value']);
+                //console.log("election_parties_data",election_parties_data)
+                //Get the election_parties_data in format {BJP : 24, INC : 34, AAP : 67, Others : 56}
+                //Update the chart with new  data of election_parties
+                var tdds = setInterval(updateChart(election_parties_data,prevData,f), 2000);
+
+            })
+                
+        }
+
+    //------------------------------------------------D3js Code------------------------------------------------------------------//
+
+        function updateChart(data, prevData, f){
+            oldPieData = JSON.parse(JSON.stringify(prevData));
+            prevData = f([
+            {name: 'BJP', value: 10 + election_parties_data.BJP * 2 },
+            {name: 'Congress', value: 10 + election_parties_data.INC * 2},
+            {name: 'AAP', value: 10 + election_parties_data.AAP * 2},
+            {name: 'Others', value: 10 + election_parties_data.Others * 2}
+            ])
+        }
+    // var crm = (function() {
+    //     var prevData = [];
+    //     console.log("prevData_outside",prevData)
+    //         return function crm(f) {
+    //             console.log("f ::::::",f)
+    //             console.log("prevData_inside",prevData)
+                
+    //             oldPieData = JSON.parse(JSON.stringify(prevData));
+    //             prevData = f([
+    //                 {name: 'BJP', value: Math.random() },
+    //                 {name: 'Congress', value: Math.random() },
+    //                 {name: 'APP', value:  Math.random()},
+    //                 {name: 'Other', value: Math.random() }
+    //             ])
+    //         }
+    // })();
+
+    pieTween = function(d, i) {
+        var s0;
+        var e0;
+        if(oldPieData[i]){
+            s0 = oldPieData[i].startAngle;
+            e0 = oldPieData[i].endAngle;
+        } else if (!(oldPieData[i]) && oldPieData[i-1]) {
+            s0 = oldPieData[i-1].endAngle;
+            e0 = oldPieData[i-1].endAngle;
+        } else if(!(oldPieData[i-1]) && oldPieData.length > 0){
+            s0 = oldPieData[oldPieData.length-1].endAngle;
+            e0 = oldPieData[oldPieData.length-1].endAngle;
+        } else {
+            s0 = 0;
+            e0 = 0;
+        }
+        var i = d3.interpolate({startAngle: s0, endAngle: e0}, {startAngle: d.startAngle, endAngle: d.endAngle});
+        return function(t) {
+            var b = i(t);
+            return arc(b);
+        };
+    };
+
+    var pie = Math.PI * 2;
+    var w = 960,
+        h = 650;
+    var duration = 750;
+    var chart = d3.select('.chart')
+            .attr('width', w)
+            .attr('height',h)
+            .append('g')
+            .attr('transform', 'translate('+w/2+','+ h/2 + ')'),
+        pieChart = d3.layout.pie()
+            .value(function(d){ return d.value; })
+            .sort(null),
+        oldPieData = [],
+
+        groups = chart.append ("g")
+            .attr("class", "groups"),
+    // group at the center of donut
+        center_group = chart.append('g')
+            .attr("class", "center_group")
+            .append('text')
+            .attr({'text-anchor': 'middle', dy: "0.35em"});
+
+    createPieChart = function(data){
+        var radius = 270, innerRadius = radius - 100;
+        var pieData,
+            color = d3.scale.ordinal()
+                .range(['#469AB2', '#F0AD4E', '#5CB85C', '#D9534F'])
+                .domain(data.map(function(d){return d.name}));
+
+        // displaying total calls at the center
+        center_group.text(d3.format(",.1f")(d3.sum(data, function(d){return d.value})));
+
+        arc = d3.svg.arc()
+            .innerRadius(innerRadius)
+            .outerRadius(radius);
+
+        var arcs = groups.selectAll('path')
+            .data((pieData = pieChart(data)), function(d){return d.data.name});
+        arcs.enter().append('path')
+            .attr('class', 'arc');
+
+        arcs.attr('fill', function(d){ return color(d.data.name)})
+            .transition()
+            .duration(duration)
+            .attrTween("d", pieTween)
+            .ease("bounce");
+
+        function computeTextRotation(d) {
+            var rotation = (d.startAngle + d.endAngle)/2 * 180 / Math.PI - 90;
+            return {
+                global: rotation,
+                correction: rotation > 90 ? 180 : 0
+            };
+        }
+
+        var labels = groups.selectAll("text")
+            .data(pieData);
+        labels.enter().append("text")
+            .attr({"text-anchor": "middle"})
+            .text(function(d) {
+                //return d.data.name + " " + "(" + Math.floor(d.data.value/(d3.sum(data, function(d){return d.value})) * 100) + "% )"
+                //console.log("d.data.value",d.data.value)
+                return d.data.name
+            })
+            .attr("dy", ".35em") // vertical-align
+            .style("font-size", 14);
+        labels
+            .transition()
+            .duration(duration)
+            .attr("transform", function(d) {
+                var r = computeTextRotation(d);
+                return "rotate(" + r.global + ")" + "translate(" + (radius + innerRadius) / 2 + ",0)" + "rotate(" + -r.correction + ")";
+            })
+            .call(endAll, function(){
+                window.requestAnimationFrame(
+                    function(){crm(createPieChart)}
+                )
+            });
+        return pieData;
+    };
+
+    crm(createPieChart);
+
+</script>
+</body>
+</html>
