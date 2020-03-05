@@ -34,3 +34,7 @@ Tools & Libraries:
   * NLTK libraries for text processing
   * NodeJS kafka-node libraries to interact with Kafka(Consumer)
   * NodeJS socket.io libraries to push messages from Kafka to D3.js UI
+  
+Project WorkFlow:
+
+![Image description](https://github.com/MrChetan/Sentimental-Analysis-and-Visualization-of-Twitter-stream-data/blob/master/project%20work%20flow.jpg)
